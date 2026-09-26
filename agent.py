@@ -12,14 +12,40 @@ import sys
 from pathlib import Path
 
 from langchain.agents import create_agent
+from langchain.agents.middleware import HumanInTheLoopMiddleware
+from langchain.tools import tool
 from langchain_google_genai import ChatGoogleGenerativeAI
 from langchain_groq import ChatGroq
 from langchain_mcp_adapters.client import MultiServerMCPClient
+from langgraph.checkpoint.memory import MemorySaver
+from langgraph.types import Command
 from pydantic import ValidationError
 
 from schema import TriageDecision
 
 logger = logging.getLogger(__name__)
+
+
+# ---------------------------------------------------------------------------
+# Escalation tool — locally defined; gated by HumanInTheLoopMiddleware.
+# ---------------------------------------------------------------------------
+
+@tool
+def escalate_to_human(reason: str) -> str:
+    """Escalate this ticket to a human operator.
+
+    Call this tool when the triage policy requires human escalation
+    (P1 priority AND Enterprise customer). The call will pause the run
+    and prompt the operator for approval before executing.
+
+    Args:
+        reason: A brief explanation of why escalation is warranted.
+
+    Returns:
+        A confirmation string when escalation is approved.
+    """
+    return f"Escalation approved. Reason: {reason}"
+
 
 # ---------------------------------------------------------------------------
 # Policy: read once at import time so every call shares the same text.
@@ -102,6 +128,40 @@ def _mcp_connections() -> dict:
 
 
 # ---------------------------------------------------------------------------
+# Human-in-the-loop helper
+# ---------------------------------------------------------------------------
+
+async def _run_with_hitl(agent, user_message: dict, config: dict) -> dict:
+    """Invoke *agent* with HITL support.
+
+    If the agent raises an __interrupt__ (because HumanInTheLoopMiddleware
+    intercepted an escalate_to_human call), prompts the operator at the
+    terminal for yes/no approval and resumes accordingly.
+
+    Args:
+        agent: The compiled LangChain agent.
+        user_message: The initial input dict.
+        config: Run configuration including thread_id for state persistence.
+
+    Returns:
+        The final result dict from the agent.
+    """
+    result = await agent.ainvoke(user_message, config=config)
+
+    if "__interrupt__" in result:
+        interrupt_payload = result["__interrupt__"]
+        print(f"\n[ESCALATION REQUEST] {interrupt_payload}")
+        answer = input("Escalate? [yes/no]: ").strip().lower()
+        decision_type = "approve" if answer in ("yes", "y") else "reject"
+        result = await agent.ainvoke(
+            Command(resume={"decisions": [{"type": decision_type}]}),
+            config=config,
+        )
+
+    return result
+
+
+# ---------------------------------------------------------------------------
 # Main entry point
 # ---------------------------------------------------------------------------
 
@@ -122,14 +182,27 @@ async def triage(ticket_id: str) -> dict:
     # MultiServerMCPClient opens a fresh stdio session for each tool call;
     # no async context manager is needed (that API was removed in this version).
     client = MultiServerMCPClient(_mcp_connections())
-    tools = await client.get_tools()
+    mcp_tools = await client.get_tools()
+
+    # escalate_to_human is a local tool; MCP tools come from the server.
+    tools = list(mcp_tools) + [escalate_to_human]
 
     agent = create_agent(
         model=llm,
         tools=tools,
         system_prompt=SYSTEM_PROMPT,
         response_format=TriageDecision,
+        checkpointer=MemorySaver(),
+        middleware=[
+            HumanInTheLoopMiddleware(
+                interrupt_on={
+                    "escalate_to_human": {"allowed_decisions": ["approve", "reject"]},
+                }
+            )
+        ],
     )
+
+    config = {"configurable": {"thread_id": ticket_id}}
 
     user_message = {
         "messages": [
@@ -156,7 +229,7 @@ async def triage(ticket_id: str) -> dict:
 
     # First attempt
     try:
-        result = await agent.ainvoke(user_message)
+        result = await _run_with_hitl(agent, user_message, config)
         return _extract(result).model_dump()
     except (ValidationError, RuntimeError) as exc:
         logger.warning(
@@ -165,9 +238,10 @@ async def triage(ticket_id: str) -> dict:
             exc,
         )
 
-    # One retry with the same input
+    # One retry with the same input — use a fresh thread_id to avoid state collision.
+    retry_config = {"configurable": {"thread_id": f"{ticket_id}-retry"}}
     try:
-        result = await agent.ainvoke(user_message)
+        result = await _run_with_hitl(agent, user_message, retry_config)
         return _extract(result).model_dump()
     except (ValidationError, RuntimeError) as exc:
         raise RuntimeError(

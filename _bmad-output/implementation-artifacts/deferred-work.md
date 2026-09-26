@@ -11,3 +11,10 @@
 - source_spec: `_bmad-output/specs/spec-epic-2/stories/1-the-triage-agent.md`
   summary: _load_policy() at import time raises FileNotFoundError; run_agent.py catches only ImportError so the helpful startup message is bypassed.
   evidence: TRIAGE_POLICY.md is a read-only project file and its presence is a deployment invariant; _load_policy() now raises RuntimeError (from OSError) which surfaceswith a clear message at import. The run_agent.py guard message is a pre-existing limitation outside this story's scope.
+
+- source_spec: `_bmad-output/specs/spec-epic-2/stories/2-human-gated-escalation.md`
+  summary: Non-ValidationError/RuntimeError exceptions (e.g. network timeout) bypass the retry loop in triage().
+  evidence: Pre-existing from Story 2.1 design; inherited by Story 2.2 without change. Would require broadening the except clauses.
+- source_spec: `_bmad-output/specs/spec-epic-2/stories/2-human-gated-escalation.md`
+  summary: 'no' answer to escalation prompt does not explicitly verify LLM won't produce escalated output afterward.
+  evidence: Relies entirely on middleware sending a clear rejection signal to the LLM; speculative risk only verifiable with live middleware testing.
