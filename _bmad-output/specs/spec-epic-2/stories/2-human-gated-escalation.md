@@ -2,8 +2,9 @@
 title: 'Human-gated escalation'
 type: 'feature'
 created: '2026-09-26'
-status: 'draft'
+status: 'done'
 route: 'dispatch'
+baseline_commit: '2f19b90050644bb3b47be5de31d3faafe19c827d'
 review_loop_iteration: 0
 context:
   - '_bmad-output/specs/spec-epic-2/SPEC.md'
@@ -45,20 +46,22 @@ context:
 
 ## Code Map
 
-- `agent.py` — does not exist yet; must be created by Story 2.1 (option A) or within this spec (option B). Will contain the `triage(ticket_id: str)` async function imported by `run_agent.py`, the MCP tool setup, the provider switch, structured-output loop, and (once this story's scope is resolved) `escalate_to_human` plus the middleware wiring.
-- `run_agent.py` — existing stub; protected MLflow lines (`sqlite:///mlflow.db`, experiment `triage-agent`, `mlflow.langchain.autolog()`); imports `triage` from `agent` and calls it with `asyncio.run`. Not modified by this story.
-- `schema.py` — provides `TriageDecision` (done, read-only); the agent's structured output validates against it.
-- `mcp/triage_server.py` — provides `get_ticket` and `get_customer_history` over stdio (read-only). Tools are loaded via `langchain-mcp-adapters`.
-- `TRIAGE_POLICY.md` — defines the escalation rule (P1 + Enterprise → call `escalate_to_human`), priority/category/route tables, the Enterprise bump rule (3+ open tickets → priority up one level), and the Safety section. Agent system prompt must encode this.
-- `pyproject.toml` — `langchain-mcp-adapters`, `langchain-google-genai`, `langchain-groq` already declared; no new dependencies expected for the human-in-the-loop gate.
-- `.claude/skills/langchain-middleware` — project skill covering `HumanInTheLoopMiddleware`, the `Command`/interrupt resume pattern, and structured output; load before implementing.
+- `agent.py` — exists (Story 2.1). Contains `_load_policy()`, `SYSTEM_PROMPT`, `_make_llm()`, `_mcp_connections()`, `_extract()`, `async def triage(ticket_id)`. **Add:** `escalate_to_human` tool decorated with `@tool`; `_run_with_hitl()` async helper that invokes the agent, detects `__interrupt__`, prompts the user at the terminal, and resumes with `Command(resume=...)`; `HumanInTheLoopMiddleware` and `MemorySaver` checkpointer wired into `create_agent`; restructure `triage()` to use the helper and pass `config={"configurable": {"thread_id": ticket_id}}`.
+- `run_agent.py` — existing; protected MLflow lines; not modified by this story.
+- `schema.py` — `TriageDecision` structured output target; read-only.
+- `mcp/triage_server.py` — MCP tools over stdio; read-only.
+- `TRIAGE_POLICY.md` — escalation rule already embedded in `SYSTEM_PROMPT`; read-only.
+- `pyproject.toml` — no new direct dependencies; `MemorySaver` and `Command` come from `langgraph`, which is already a transitive dependency.
+- `.claude/skills/langchain-middleware` — covers `HumanInTheLoopMiddleware`, `interrupt_on`, `Command(resume=...)` pattern, and the `MemorySaver` + `thread_id` requirement; load before implementing.
 
 ## Tasks & Acceptance
 
 **Execution:**
-- [ ] `agent.py` — add `escalate_to_human(ticket_id: str) -> str` tool function (a no-op stub that returns a confirmation string; the middleware handles the actual pause); register it alongside the MCP tools in the agent's tool list
-- [ ] `agent.py` — wrap `escalate_to_human` with `HumanInTheLoopMiddleware` (from `langchain-middleware` skill) so the agent pauses for a terminal yes/no before the tool executes; "no" must result in the tool call being declined and the run completing without escalation
-- [ ] `tests/test_escalation.py` — add tests using monkeypatched stdin/approval callback covering: escalation triggered + approved, escalation triggered + declined, escalation not triggered (no prompt fires)
+- [x] `agent.py` — add module-level `escalate_to_human` `@tool` function with a `reason: str` parameter that returns a confirmation string; include it in `tools` list passed to `create_agent`
+- [x] `agent.py` — add `MemorySaver` checkpointer and `HumanInTheLoopMiddleware(interrupt_on={"escalate_to_human": {"allowed_decisions": ["approve", "reject"]}})` to `create_agent`; pass `config={"configurable": {"thread_id": ticket_id}}` to every `ainvoke` call
+- [x] `agent.py` — add `async def _run_with_hitl(agent, user_message, config) -> dict` helper: invokes the agent, checks for `"__interrupt__"` in the result, prompts `input("Escalate? [yes/no]: ")` at the terminal, resumes with `Command(resume={"decisions": [{"type": "approve" if yes else "reject"}]})`, returns the final result dict
+- [x] `agent.py` — replace direct `agent.ainvoke` calls in `triage()` with `_run_with_hitl`; keep the retry-once logic wrapping it
+- [x] `tests/test_escalation.py` — monkeypatched tests covering: escalation triggered + approved (user says yes → run completes), escalation triggered + declined (user says no → run completes without escalating), no escalation (non-P1/non-Enterprise → no interrupt, no prompt)
 
 **Acceptance Criteria:**
 - Given a ticket that resolves to P1 with an Enterprise customer, when the agent runs, then `run_agent.py` pauses at the terminal with a yes/no prompt before any escalation executes.
@@ -71,7 +74,28 @@ context:
 
 ## Spec Change Log
 
+
 ## Review Triage Log
+
+- **medium → patched:** BH7+ECH1 — "y" mapped silently to reject; `"yes".lower()` requires exact word; changed to `if answer in ("yes", "y"):`.
+- **medium → patched:** ECH8+VGap1 — resume `ainvoke` config kwarg never asserted in tests; removing `config=config` from resume call would pass all tests silently; added `kwargs["config"]` assertion in approve and reject resume tests.
+- **false:** BH1+ECH3 — `if` vs `while` for interrupt loop: only one `escalate_to_human` tool in `interrupt_on`; a second interrupt is architecturally impossible.
+- **false:** BH4 — retry uses same input with no corrective feedback: inherited from Story 2.1 spec; retry-once is the mandated behavior.
+- **false:** BH5 — `"__interrupt__" in result` assumes dict: `create_agent` always returns a dict from `ainvoke`; framework invariant.
+- **false:** BH6+ECH7 — `escalate_to_human` returns "approved" always: middleware prevents tool body execution on rejection; body only runs on approval.
+- **false:** BH8 — diff header path missing leading `/`: artifact of `git diff --no-index /dev/null` formatting; actual file path in repo is correct.
+- **false:** BH10 — MCP tools unprotected by middleware: `get_ticket`/`get_customer_history` are read-only lookups; HITL only required on the escalation action per spec and policy.
+- **false:** ECH9 — MemorySaver at test module level: MemorySaver has no init side effects; purely in-memory.
+- **false:** ECH10 — isinstance check fragile: Command is not a dict subclass.
+- **false:** ECH11 — `_extract` not mocked in call_count test: fixture supplies a real TriageDecision; `_extract` succeeds without mocking.
+- **false:** ECH13 — claim "escalation not recorded in MLflow": `mlflow.langchain.autolog()` captures all tool calls including `escalate_to_human`; escalation appears in the trace automatically.
+- **low (rejected):** BH2+ECH4+ECH2 — blocking `input()` in async: terminal CLI by spec; AGENTS.md scopes to terminal use; fix adds complexity for a non-problem in this context.
+- **low (rejected):** BH3 — MemorySaver non-persistent: workshop design choice; restart scenario out of scope.
+- **low (rejected):** BH9 — no test for ValidationError+HITL combined: highly unlikely edge case; fix adds complexity.
+- **low (rejected):** ECH5 — ticket_id None/non-string: unreachable with current callers (`run_agent.py` always provides `sys.argv[1]` as string).
+- **low (rejected):** ECH6 — retry re-prompts on escalate+approve+_extract failure: vanishingly unlikely combined scenario.
+- **low → defer:** ECH12 — non-ValidationError/RuntimeError bypass retry: pre-existing from Story 2.1 design; not caused by this story.
+- **defer:** ECH14 — "no" doesn't guarantee LLM won't produce escalated output: speculative; middleware framework behavior not testable without live middleware.
 
 ## Design Notes
 
