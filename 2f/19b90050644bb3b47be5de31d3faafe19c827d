@@ -1,0 +1,44 @@
+_bmad-output/specs/spec-epic-2/stories/1-the-triage-agent.md
+  s_9b36507bec2571::t_8d8a1a3a8004a6 8
+  s_9b36507bec2571::t_030ddb964cf036 7
+  s_9b36507bec2571::t_d27043c53a586c 86-99
+  s_9b36507bec2571::t_8383d55521e5a6 5
+  s_9b36507bec2571::t_dc08bfe80c5314 81-82
+  s_9b36507bec2571::t_59a48f7af43afe 1-4,6,9-64,69-80,83-84,100-113
+  s_9b36507bec2571::t_e0d7ffd7855602 85
+  s_9b36507bec2571::t_1bd2fc54542574 65-68
+_bmad-output/implementation-artifacts/deferred-work.md
+  s_9b36507bec2571::t_a91f6f02741a5c 10-13
+tests/test_agent.py
+  s_9b36507bec2571::t_0bd1ab58a50851 1-11,13-73,76-78,83-84,86-93,96-98,100-103,108-109,111-122,125-140,145-146,148-154,157-172,177-178,180-194,197-199,204-205,207-219,222-224,226-231,234-236,238-276
+  s_9b36507bec2571::t_5f7858844d391b 12
+  s_9b36507bec2571::t_9ded0ee98c8a3f 74-75,79-82,99,104-107,110
+  s_9b36507bec2571::t_caef10ec8c008c 85,94-95
+  s_9b36507bec2571::t_6504275cd2ead5 123-124,141-144,147,155-156,173-176,179
+  s_9b36507bec2571::t_0cb891009e5297 195-196,200-203,206
+  s_9b36507bec2571::t_8a4fbe91cc8211 220-221,225,232-233,237
+agent.py
+  s_9b36507bec2571::t_c157e28bf46679 14-17
+  s_9b36507bec2571::t_79f0d9393cec85 30-33
+  s_9b36507bec2571::t_9ebae8965666d6 75,81-82
+  s_9b36507bec2571::t_8d3e6569185db4 76
+  s_9b36507bec2571::t_6cf90f3886d260 122-133,157-165,168-175
+  s_9b36507bec2571::t_f07e07d450530b 1-13,18-29,34-74,77-80,83-121,134-146,166
+  s_9b36507bec2571::t_7bf3bc1a5b20d3 147-156,167
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.6.24",
+  "base_commit_sha": "2f19b90050644bb3b47be5de31d3faafe19c827d",
+  "prompts": {},
+  "sessions": {
+    "s_9b36507bec2571": {
+      "agent_id": {
+        "tool": "claude",
+        "id": "48304a41-a6ab-4554-9053-c9f41cf73b4c",
+        "model": "claude-sonnet-4-6"
+      },
+      "human_author": "Bhaskar Bhupalam <bbhupalam@paloaltonetworks.com>"
+    }
+  }
+}
