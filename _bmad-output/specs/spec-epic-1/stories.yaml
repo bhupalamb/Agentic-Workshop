@@ -1,0 +1,13 @@
+- id: "1"
+  title: Triage decision schema
+  description: >-
+    Implement the validated JSON schema for triage decisions (CAP-1): define
+    allowed values for category, priority, route, and rationale, and reject
+    any non-conforming object with a clear error.
+
+- id: "2"
+  title: Seed loader
+  description: >-
+    Implement load_seed.py (CAP-2): read seed/tickets.csv and
+    seed/customers.csv and write app.db with tables tickets and customers
+    whose columns match the CSV headers, idempotent on repeat runs.
