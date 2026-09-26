@@ -1,0 +1,23 @@
+_bmad-output/specs/spec-epic-1/SPEC.md
+  s_e5dc5ddd63d7b3::t_b57b365ddb3a5d 1-38
+_bmad-output/specs/spec-epic-1/.memlog.md
+  s_e5dc5ddd63d7b3::t_1be03980c38efa 1-17
+_bmad-output/specs/spec-epic-1/stories.yaml
+  s_e5dc5ddd63d7b3::t_b1a7470e868df8 1-13
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.6.24",
+  "base_commit_sha": "a896d7514b5a724f0f1c26f678e48a5633624ccb",
+  "prompts": {},
+  "sessions": {
+    "s_e5dc5ddd63d7b3": {
+      "agent_id": {
+        "tool": "claude",
+        "id": "6978f392-a2af-4860-92ed-beb72a83e3d2",
+        "model": "claude-sonnet-4-6"
+      },
+      "human_author": "Bhaskar Bhupalam <bbhupalam@paloaltonetworks.com>"
+    }
+  }
+}
