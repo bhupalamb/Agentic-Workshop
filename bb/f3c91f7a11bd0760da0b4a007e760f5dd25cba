@@ -1,0 +1,34 @@
+_bmad-output/implementation-artifacts/deferred-work.md
+  s_9b36507bec2571::t_c9962c3a52af44 14-20
+_bmad-output/specs/spec-epic-2/stories/2-human-gated-escalation.md
+  s_9b36507bec2571::t_bcf05621b11746 49-55
+  s_9b36507bec2571::t_80376b77744aea 5,77,80-98
+  s_9b36507bec2571::t_046e2aedb2711f 7
+  s_9b36507bec2571::t_03a2e1af7acbb8 60-64
+  s_9b36507bec2571::t_bce5d8c0a5dd07 99
+agent.py
+  s_9b36507bec2571::t_410c5bd6677588 155
+  s_9b36507bec2571::t_681844b54190ac 130-154,156-163,185-188,195-202,205-206,232,241-242,244
+  s_9b36507bec2571::t_a6d3ebf1200835 15-16,20-21
+  s_9b36507bec2571::t_11c21d445973fb 28-49
+tests/test_escalation.py
+  s_9b36507bec2571::t_93bae40a8a2d63 1-114,117-119,121-125,127,129-145,147-152,157-197,200-202,204-208,210,212-228,230-235,240-408
+  s_9b36507bec2571::t_13a30de5d22396 198-199,203,209,211,229,236-239
+  s_9b36507bec2571::t_88bc53c9cbb789 115-116,120,126,128,146,153-156
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.6.24",
+  "base_commit_sha": "bbf3c91f7a11bd0760da0b4a007e760f5dd25cba",
+  "prompts": {},
+  "sessions": {
+    "s_9b36507bec2571": {
+      "agent_id": {
+        "tool": "claude",
+        "id": "48304a41-a6ab-4554-9053-c9f41cf73b4c",
+        "model": "claude-sonnet-4-6"
+      },
+      "human_author": "Bhaskar Bhupalam <bbhupalam@paloaltonetworks.com>"
+    }
+  }
+}
