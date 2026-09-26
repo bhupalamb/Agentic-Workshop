@@ -1,0 +1,21 @@
+_bmad-output/implementation-artifacts/deferred-work.md
+  s_9b36507bec2571::t_1ddd47cf1819aa 4-9
+_bmad-output/specs/spec-epic-1/stories/1-triage-decision-schema.md
+  s_9b36507bec2571::t_147dd90e78cac9 37-61
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.6.24",
+  "base_commit_sha": "d9e921ddc8e2aaebdd5d4e3082396f4304452b5b",
+  "prompts": {},
+  "sessions": {
+    "s_9b36507bec2571": {
+      "agent_id": {
+        "tool": "claude",
+        "id": "48304a41-a6ab-4554-9053-c9f41cf73b4c",
+        "model": "claude-sonnet-4-6"
+      },
+      "human_author": "Bhaskar Bhupalam <bbhupalam@paloaltonetworks.com>"
+    }
+  }
+}
