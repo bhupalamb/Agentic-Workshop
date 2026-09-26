@@ -34,3 +34,28 @@ context:
 - false: "No test for category/route mismatch" — same root cause as first finding; out of scope.
 - defer: "schema.py is a top-level module" — consistent with existing project structure; logged in deferred-work.md.
 - low → rejected: "tests/__init__.py is empty" — harmless, pytest doesn't need it; not worth a change.
+
+## Review Findings
+
+> Generated: 2026-09-26 | Branch: story/bhaskar-1.1 | Reviewer: bmad-code-review
+
+### Patch
+
+- [ ] [Review][Patch] Loop tests make no assertions — `test_all_categories`, `test_all_priorities`, `test_all_routes` construct objects but never assert the stored field value; a coercion regression would pass silently [tests/test_schema.py:22-31]
+- [ ] [Review][Patch] Missing-field coverage only for rationale — `test_missing_field` only omits `rationale`; `category`, `priority`, and `route` are not tested for missing-field rejection [tests/test_schema.py:47]
+- [ ] [Review][Patch] Whitespace-only rationale passes validation — `' '` (single space) satisfies `min_length=1` and is accepted; verified with live run; fix: `Field(min_length=1, pattern=r'\S')` [schema.py:14]
+
+### Defer
+
+- [x] [Review][Defer] `rationale` one-sentence enforcement has no upper bound [schema.py:14] — deferred: spec says "one-sentence" but specifies no `max_length`; implementation deliberately chose `min_length=1` for "non-empty"; requires spec clarification to mandate a machine-checkable sentence constraint
+- [x] [Review][Defer] `deferred-work.md` lacks a resolution trigger for the schema module location [_bmad-output/implementation-artifacts/deferred-work.md] — deferred: pre-existing planning artifact; no "done when" condition; no code impact until Epic 2 import chain is established
+- [x] [Review][Defer] `stories.yaml` IDs use bare integers instead of dotted story slugs [_bmad-output/specs/spec-epic-1/stories.yaml] — deferred: planning artifact convention; no functional impact on code or tooling
+
+### Rejected
+
+- **false** — `test_extra_field_rejected` uses keyword arg, not dict-spread: both call forms are functionally identical in Python/Pydantic v2; verified with live run — both raise `ValidationError`
+- **false** — No `__repr__` or documented serialization contract: Pydantic v2 `BaseModel` provides `__repr__`, `model_dump()`, and `model_dump_json()` with well-defined behavior out of the box
+- **false** — No test for `None`/non-string values: Pydantic v2 enforces Python types automatically and deterministically; the claimed harm ("no documented expectation") names no concrete failure mode
+- **false** — Diff adds spec files outside story scope: `_bmad-output/specs/spec-epic-1/` artifacts are the expected output of the `bmad-spec` workflow, not a story scope violation
+- **false** — No `pyproject.toml` change for pydantic: `pydantic>=2.8` is already explicitly declared in `pyproject.toml`
+- **low (rejected)** — `ATTENDEES.md` lacks last name: cosmetic documentation issue with no code or developer impact in everyday use
